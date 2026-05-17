@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Голос — анонимная линия обращений для университета">
-  <title>Голос — Анонимная линия обращений</title>
+  <meta name="description" content="Голос — цифровой комплаенс-канал для университета">
+  <title>Голос — Цифровой комплаенс-канал</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@
         Голос
       </div>
       <button class="topbar__action" onclick="Nav.toStatus()" type="button">
-        Проверить статус →
+        Статус обращения →
       </button>
     </header>
 
@@ -39,12 +39,13 @@
       <section class="hero">
         <h1 class="hero__title">Расскажите о нарушении. Анонимно.</h1>
         <p class="hero__body">
-          Ваша личность технически не может быть установлена.
-          Без регистрации и email.
+          Цифровой комплаенс-канал университета. Ваша личность
+          технически не может быть установлена.
         </p>
       </section>
 
-      <section class="stats-row" aria-label="Статистика">
+      <!-- Статистика -->
+      <section class="stats-row" aria-label="Статистика системы">
         <div class="stat">
           <b class="stat__num stat__num--teal" id="stat-active">8</b>
           <span class="stat__lbl">в работе</span>
@@ -55,10 +56,11 @@
         </div>
         <div class="stat">
           <b class="stat__num stat__num--navy">18ч</b>
-          <span class="stat__lbl">время ответа</span>
+          <span class="stat__lbl">среднее время ответа</span>
         </div>
       </section>
 
+      <!-- Гарантии -->
       <ul class="trust-list" aria-label="Гарантии системы">
         <li class="trust-item">
           <span class="trust-item__mark" aria-hidden="true">
@@ -67,7 +69,7 @@
                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
-          <span>Анонимность на уровне архитектуры системы</span>
+          <span>Анонимность на уровне архитектуры — без IP-адресов и cookies</span>
         </li>
         <li class="trust-item">
           <span class="trust-item__mark" aria-hidden="true">
@@ -76,7 +78,7 @@
                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
-          <span>Двусторонний диалог без раскрытия личности</span>
+          <span>Двусторонний диалог с омбудсменом без раскрытия личности</span>
         </li>
         <li class="trust-item">
           <span class="trust-item__mark" aria-hidden="true">
@@ -89,34 +91,55 @@
         </li>
       </ul>
 
+      <!-- CTA -->
       <div class="cta-block">
         <button class="btn btn--primary" onclick="Wizard.start()" type="button">
-          Рассказать о нарушении →
+          Подать обращение →
         </button>
-        <!-- FIX: добавлен onclick для кнопки анонимности -->
+
+        <!-- TRUST CHIPS -->
+        <div class="trust-chips" aria-label="Параметры безопасности">
+          <span class="chip">Без регистрации</span>
+          <span class="chip">Данные зашифрованы</span>
+          <span class="chip">Анонимно</span>
+        </div>
+
         <button class="text-link" onclick="App.toggleAnonymity()" type="button">
           Как работает анонимность →
         </button>
       </div>
 
-      <!-- Панель объяснения анонимности (скрыта по умолчанию) -->
-      <div class="anon-panel hidden" id="anon-panel" role="region" aria-label="Как работает анонимность">
-        <button class="anon-panel__close" onclick="App.toggleAnonymity()" type="button" aria-label="Закрыть">✕</button>
+      <!-- Панель анонимности -->
+      <div class="anon-panel hidden" id="anon-panel" role="region">
+        <button class="anon-panel__close" onclick="App.toggleAnonymity()"
+          type="button" aria-label="Закрыть">✕</button>
         <h3 class="anon-panel__title">Как работает анонимность</h3>
         <ul class="anon-panel__list">
           <li>
-            <strong>Без аккаунта</strong> — вы не регистрируетесь и не вводите email или телефон
+            <strong>Без аккаунта</strong> — вы не регистрируетесь,
+            не вводите email или телефон
           </li>
           <li>
-            <strong>Код вместо личности</strong> — система выдаёт случайный код. Только вы знаете его — ни мы, ни сервер
+            <strong>Код вместо личности</strong> — система выдаёт случайный
+            код. Только вы знаете его
           </li>
           <li>
-            <strong>Без IP-адресов</strong> — мы не сохраняем ваш адрес в интернете
+            <strong>Без IP-адресов</strong> — мы не сохраняем адрес
+            в интернете и не используем cookies
           </li>
           <li>
-            <strong>Анонимный диалог</strong> — омбудсмен может задавать вопросы через код, не зная кто вы
+            <strong>Анонимный диалог</strong> — омбудсмен задаёт вопросы
+            через код, не зная кто вы
           </li>
         </ul>
+      </div>
+
+      <!-- DEMO BLOCK для жюри -->
+      <div class="demo-block">
+        <p class="demo-block__label">Хотите посмотреть как работает система?</p>
+        <button class="btn btn--demo" onclick="App.runDemo()" type="button">
+          Открыть демонстрацию →
+        </button>
       </div>
 
     </main>
@@ -129,7 +152,6 @@
   <div id="s-wizard" class="screen">
 
     <header class="topbar topbar--compact">
-      <!-- FIX: visibility:hidden чтобы занимал место но не был виден на шаге 1 -->
       <button class="btn-back" id="wizard-back" onclick="Wizard.back()"
         type="button" style="visibility:hidden">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -156,31 +178,34 @@
       </nav>
     </header>
 
-    <!-- STEP 1: Category -->
+    <!-- STEP 1 -->
     <div class="wizard-pane is-active" id="pane-1">
       <main class="page-body">
         <div class="pane-head">
           <h2 class="pane-head__title">Что произошло?</h2>
-          <p class="pane-head__sub">Выберите одну категорию</p>
+          <p class="pane-head__sub">Выберите категорию нарушения</p>
         </div>
-        <!-- FIX: onclick="Wizard.pickCat(this)" — метод переименован в JS -->
         <div class="cats" role="radiogroup" aria-label="Категория нарушения">
-          <button class="cat" data-val="money"    onclick="Wizard.pickCat(this)" type="button" aria-pressed="false">
+          <button class="cat" data-val="money" onclick="Wizard.pickCat(this)"
+            type="button" aria-pressed="false">
             <span class="cat__ico" aria-hidden="true">💰</span>
             <strong class="cat__name">Деньги / Взятка</strong>
             <span class="cat__hint">Требование оплаты, откат, хищение</span>
           </button>
-          <button class="cat" data-val="pressure" onclick="Wizard.pickCat(this)" type="button" aria-pressed="false">
+          <button class="cat" data-val="pressure" onclick="Wizard.pickCat(this)"
+            type="button" aria-pressed="false">
             <span class="cat__ico" aria-hidden="true">⚖️</span>
             <strong class="cat__name">Давление / Этика</strong>
             <span class="cat__hint">Принуждение, угрозы, дискриминация</span>
           </button>
-          <button class="cat" data-val="conflict" onclick="Wizard.pickCat(this)" type="button" aria-pressed="false">
+          <button class="cat" data-val="conflict" onclick="Wizard.pickCat(this)"
+            type="button" aria-pressed="false">
             <span class="cat__ico" aria-hidden="true">🔗</span>
             <strong class="cat__name">Конфликт интересов</strong>
             <span class="cat__hint">Личная выгода через служебное положение</span>
           </button>
-          <button class="cat" data-val="other"    onclick="Wizard.pickCat(this)" type="button" aria-pressed="false">
+          <button class="cat" data-val="other" onclick="Wizard.pickCat(this)"
+            type="button" aria-pressed="false">
             <span class="cat__ico" aria-hidden="true">📋</span>
             <strong class="cat__name">Другое нарушение</strong>
             <span class="cat__hint">Любое нарушение не из списка выше</span>
@@ -189,45 +214,44 @@
       </main>
     </div>
 
-    <!-- STEP 2: Details -->
+    <!-- STEP 2 -->
     <div class="wizard-pane" id="pane-2">
       <main class="page-body">
         <div class="pane-head">
           <h2 class="pane-head__title">Расскажите подробнее</h2>
-          <p class="pane-head__sub">Только описание обязательно</p>
+          <p class="pane-head__sub">Только описание обязательно — остальное по желанию</p>
         </div>
         <div class="field">
           <label class="field__lbl" for="f-loc">Где это произошло?</label>
           <input class="field__inp" type="text" id="f-loc"
-            placeholder="Корпус, кафедра, кабинет..."
+            placeholder="Например: корпус А, кафедра экономики"
             autocomplete="off" spellcheck="false">
         </div>
         <div class="field">
           <label class="field__lbl" for="f-date">Когда? (примерно)</label>
           <input class="field__inp" type="text" id="f-date"
-            placeholder="Май 2026, около 10 мая...">
+            placeholder="Например: май 2026, около 10 мая">
         </div>
         <div class="field">
           <label class="field__lbl" for="f-desc">
-            Опишите ситуацию <span class="field__req" aria-label="обязательное">*</span>
+            Опишите ситуацию
+            <span class="field__req" aria-label="обязательное поле">*</span>
           </label>
-          <!-- FIX: oninput="Wizard.checkDesc()" — правильное имя метода -->
           <textarea class="field__ta" id="f-desc" rows="5"
-            placeholder="Что произошло? Кто был причастен? Любые подробности помогут..."
+            placeholder="Что произошло? Кто был причастен? Чем больше деталей — тем эффективнее расследование"
             oninput="Wizard.checkDesc()"></textarea>
-          <span class="field__hint">Минимум 20 символов</span>
+          <span class="field__hint" id="desc-hint">Минимум 20 символов</span>
         </div>
       </main>
     </div>
 
-    <!-- STEP 3: Review -->
+    <!-- STEP 3 -->
     <div class="wizard-pane" id="pane-3">
       <main class="page-body">
         <div class="pane-head">
           <h2 class="pane-head__title">Проверьте перед отправкой</h2>
-          <p class="pane-head__sub">Убедитесь, что всё указано верно</p>
+          <p class="pane-head__sub">После отправки изменить данные нельзя</p>
         </div>
-
         <dl class="review-list">
           <div class="review-row">
             <dt>Категория</dt>
@@ -248,7 +272,6 @@
         </dl>
 
         <label class="check-row">
-          <!-- FIX: onchange="Wizard.checkConfirm()" — правильное имя метода -->
           <input class="check-row__inp" type="checkbox" id="chk-confirm"
             onchange="Wizard.checkConfirm()">
           <span class="check-row__lbl">
@@ -257,17 +280,18 @@
         </label>
 
         <div class="callout callout--warn">
-          Заведомо ложные обращения могут повлечь дисциплинарную ответственность
+          Заведомо ложные обращения могут повлечь дисциплинарную ответственность согласно
+          уставу университета
         </div>
       </main>
     </div>
 
-    <!-- Sticky footer -->
     <footer class="wiz-foot">
-      <!-- FIX: onclick="Wizard.next()" — правильное имя метода -->
       <div id="wf-1">
         <button class="btn btn--primary" id="btn-next-1"
-          onclick="Wizard.next()" type="button" disabled>Далее →</button>
+          onclick="Wizard.next()" type="button" disabled>
+          Далее →
+        </button>
       </div>
       <div id="wf-2" class="wiz-foot__split hidden">
         <button class="btn btn--icon" onclick="Wizard.back()"
@@ -289,7 +313,9 @@
           </svg>
         </button>
         <button class="btn btn--primary" id="btn-submit"
-          onclick="Wizard.submit()" type="button" disabled>Отправить анонимно</button>
+          onclick="Wizard.submit()" type="button" disabled>
+          Отправить анонимно
+        </button>
       </div>
     </footer>
 
@@ -313,26 +339,32 @@
 
       <div class="confirm-head">
         <h1 class="confirm-head__title">Обращение принято</h1>
-        <p class="confirm-head__sub">Сохраните ваш уникальный код</p>
+        <p class="confirm-head__sub">
+          Сохраните код — это единственный способ вернуться к обращению
+        </p>
       </div>
 
       <div class="code-box">
         <p class="code-box__label">КОД ДОСТУПА</p>
         <p class="code-box__code" id="el-code">&nbsp;</p>
         <hr class="code-box__rule">
-        <button class="btn btn--outline" id="btn-copy" type="button" onclick="App.copyCode()">
+        <button class="btn btn--outline" id="btn-copy" type="button"
+          onclick="App.copyCode()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="8" y="8" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.75"/>
+            <rect x="8" y="8" width="13" height="13" rx="2"
+              stroke="currentColor" stroke-width="1.75"/>
             <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
               stroke="currentColor" stroke-width="1.75"/>
           </svg>
           Скопировать код
         </button>
-        <p class="code-box__note">Мы не можем восстановить код. Только вы знаете его.</p>
+        <p class="code-box__note">
+          Мы не можем восстановить код — он не хранится на сервере
+        </p>
       </div>
 
       <div class="callout callout--warn" role="alert">
-        Без кода вы не сможете проверить статус или ответить на вопросы омбудсмена
+        Без кода вы не сможете проверить статус или ответить омбудсмену
       </div>
 
       <div class="next-steps">
@@ -345,7 +377,7 @@
             </div>
             <div class="tl-row__body">
               <p class="tl-row__when">Сейчас</p>
-              <p class="tl-row__what">Обращение зарегистрировано</p>
+              <p class="tl-row__what">Обращение зарегистрировано в системе</p>
             </div>
           </li>
           <li class="tl-row">
@@ -355,7 +387,9 @@
             </div>
             <div class="tl-row__body">
               <p class="tl-row__when">До 24 часов</p>
-              <p class="tl-row__what tl-row__what--dim">Омбудсмен рассмотрит обращение</p>
+              <p class="tl-row__what tl-row__what--dim">
+                Омбудсмен рассмотрит обращение
+              </p>
             </div>
           </li>
           <li class="tl-row">
@@ -364,7 +398,9 @@
             </div>
             <div class="tl-row__body">
               <p class="tl-row__when">При необходимости</p>
-              <p class="tl-row__what tl-row__what--dim">Омбудсмен задаст уточняющие вопросы</p>
+              <p class="tl-row__what tl-row__what--dim">
+                Омбудсмен задаст уточняющие вопросы через код
+              </p>
             </div>
           </li>
         </ol>
@@ -394,41 +430,72 @@
       <span class="topbar__code" id="topbar-code"></span>
     </header>
 
-    <!-- Search state -->
+    <!-- Search -->
     <main class="page-body" id="pnl-search">
       <div class="pane-head">
-        <h1 class="pane-head__title">Проверить статус</h1>
-        <p class="pane-head__sub">Введите код из вашего подтверждения</p>
+        <h1 class="pane-head__title">Статус обращения</h1>
+        <p class="pane-head__sub">
+          Введите код, который вы получили при подаче обращения
+        </p>
       </div>
+
       <div class="demo-tip">
-        💡 Демо-коды: <b>DEMO-0001</b>, <b>DEMO-0002</b>, <b>DEMO-0003</b>
+        💡 Демо-коды для знакомства с системой:
+        <b>DEMO-0001</b> · <b>DEMO-0002</b> · <b>DEMO-0003</b>
       </div>
+
       <div class="search-row">
         <input class="field__inp search-row__inp" type="text" id="inp-code"
-          placeholder="XXXX-0000" autocomplete="off" autocorrect="off"
+          placeholder="XXXX-0000"
+          autocomplete="off" autocorrect="off"
           autocapitalize="characters" spellcheck="false"
+          inputmode="text"
           oninput="Status.clearErr()"
           onkeydown="if(event.key==='Enter') Status.find()">
         <button class="btn btn--primary search-row__btn"
           onclick="Status.find()" type="button">Найти</button>
       </div>
-      <p class="err-msg" id="search-err">Обращение с таким кодом не найдено</p>
+      <p class="err-msg" id="search-err">
+        Обращение не найдено. Проверьте код — 4 буквы, дефис, 4 цифры.
+      </p>
     </main>
 
-    <!-- Result state -->
+    <!-- Result -->
     <main class="page-body hidden" id="pnl-result">
 
       <div class="result-head">
-        <h2 class="result-head__title" id="res-title">Обращение</h2>
-        <div class="badge" id="res-badge">
-          <span class="badge__dot"></span>
-          <span id="res-badge-text">—</span>
+        <div class="result-head__top">
+          <h2 class="result-head__title" id="res-title">Обращение</h2>
+          <div class="badge" id="res-badge">
+            <span class="badge__dot"></span>
+            <span id="res-badge-text">—</span>
+          </div>
         </div>
+        <!-- LAST UPDATED -->
+        <p class="last-updated" id="last-updated"></p>
       </div>
 
       <div class="card">
         <p class="card__heading">ИСТОРИЯ ОБРАЩЕНИЯ</p>
         <ol class="timeline" id="tl-history"></ol>
+      </div>
+
+      <!-- EMPTY STATE когда нет сообщения от омбудсмена -->
+      <div class="empty-officer hidden" id="pnl-empty-officer">
+        <div class="empty-officer__icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6L12 2Z"
+              stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M12 8v4m0 4h.01" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="empty-officer__text">
+          Обращение рассматривается. Омбудсмен свяжется с вами в течение 24 часов.
+        </p>
+        <p class="empty-officer__sub">
+          Вернитесь позже и введите ваш код, чтобы проверить обновления.
+        </p>
       </div>
 
       <div class="officer-msg hidden" id="pnl-officer">
@@ -445,22 +512,26 @@
       <div class="reply-pane hidden" id="pnl-reply">
         <h3 class="reply-pane__heading">Ваш анонимный ответ</h3>
         <textarea class="field__ta" id="inp-reply" rows="4"
-          placeholder="Ваш ответ останется анонимным"
+          placeholder="Напишите ответ — омбудсмен не знает кто вы"
           oninput="Status.countChars()"></textarea>
         <p class="field__counter"><span id="char-count">0</span>/500</p>
         <button class="btn btn--primary" style="margin-top:12px"
-          onclick="Status.sendReply()" type="button">Отправить анонимно</button>
-        <p class="reply-pane__note">Омбудсмен не знает кто вы. Только ваш код.</p>
+          onclick="Status.sendReply()" type="button">
+          Отправить анонимно
+        </button>
+        <p class="reply-pane__note">
+          Омбудсмен видит только текст. Ваша личность остаётся защищённой.
+        </p>
       </div>
 
       <div class="callout callout--ok hidden" id="pnl-sent">
-        ✓ Ответ отправлен. Омбудсмен рассмотрит его в ближайшее время.
+        ✓ Ответ принят. Омбудсмен рассмотрит его в течение 24 часов.
       </div>
 
     </main>
   </div>
 
-</div><!-- /.app -->
+</div>
 <script src="script.js"></script>
 </body>
 </html>
