@@ -1007,3 +1007,55 @@ ol, ul { list-style: none; }
 @media (min-width: 640px) {
   .app { box-shadow: 0 0 0 1px var(--c-border), var(--sh-md); }
 }
+
+/* ─────────────────────────────────────────────
+   ANONYMITY PANEL (toggle on home screen)
+───────────────────────────────────────────── */
+.anon-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-20);
+  position: relative;
+  box-shadow: var(--sh-md);
+  animation: screenIn .18s ease both;
+}
+
+.anon-panel__close {
+  position: absolute;
+  top: var(--sp-12);
+  right: var(--sp-14);
+  font-size: 16px;
+  color: var(--c-muted);
+  line-height: 1;
+  padding: 4px;
+}
+.anon-panel__close:hover { color: var(--c-navy); }
+
+.anon-panel__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--c-navy);
+  margin-bottom: var(--sp-14);
+  padding-right: var(--sp-20);
+}
+
+.anon-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  list-style: none;
+}
+
+.anon-panel__list li {
+  font-size: 14px;
+  color: var(--c-text);
+  line-height: 1.55;
+  padding-left: var(--sp-12);
+  border-left: 2px solid var(--c-teal);
+}
+
+.anon-panel__list strong {
+  color: var(--c-navy);
+  font-weight: 600;
+}

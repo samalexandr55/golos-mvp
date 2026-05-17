@@ -14,7 +14,7 @@
 <div class="app">
 
   <!-- ================================================
-       SCREEN 1: HOME — Trust Dashboard
+       SCREEN 1: HOME
   ================================================ -->
   <div id="s-home" class="screen is-active">
 
@@ -46,7 +46,7 @@
 
       <section class="stats-row" aria-label="Статистика">
         <div class="stat">
-          <b class="stat__num stat__num--teal"  id="stat-active">8</b>
+          <b class="stat__num stat__num--teal" id="stat-active">8</b>
           <span class="stat__lbl">в работе</span>
         </div>
         <div class="stat">
@@ -93,7 +93,30 @@
         <button class="btn btn--primary" onclick="Wizard.start()" type="button">
           Рассказать о нарушении →
         </button>
-        <button class="text-link" type="button">Как работает анонимность →</button>
+        <!-- FIX: добавлен onclick для кнопки анонимности -->
+        <button class="text-link" onclick="App.toggleAnonymity()" type="button">
+          Как работает анонимность →
+        </button>
+      </div>
+
+      <!-- Панель объяснения анонимности (скрыта по умолчанию) -->
+      <div class="anon-panel hidden" id="anon-panel" role="region" aria-label="Как работает анонимность">
+        <button class="anon-panel__close" onclick="App.toggleAnonymity()" type="button" aria-label="Закрыть">✕</button>
+        <h3 class="anon-panel__title">Как работает анонимность</h3>
+        <ul class="anon-panel__list">
+          <li>
+            <strong>Без аккаунта</strong> — вы не регистрируетесь и не вводите email или телефон
+          </li>
+          <li>
+            <strong>Код вместо личности</strong> — система выдаёт случайный код. Только вы знаете его — ни мы, ни сервер
+          </li>
+          <li>
+            <strong>Без IP-адресов</strong> — мы не сохраняем ваш адрес в интернете
+          </li>
+          <li>
+            <strong>Анонимный диалог</strong> — омбудсмен может задавать вопросы через код, не зная кто вы
+          </li>
+        </ul>
       </div>
 
     </main>
@@ -101,11 +124,12 @@
 
 
   <!-- ================================================
-       SCREEN 2: WIZARD — 3-step form
+       SCREEN 2: WIZARD
   ================================================ -->
   <div id="s-wizard" class="screen">
 
     <header class="topbar topbar--compact">
+      <!-- FIX: visibility:hidden чтобы занимал место но не был виден на шаге 1 -->
       <button class="btn-back" id="wizard-back" onclick="Wizard.back()"
         type="button" style="visibility:hidden">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -139,6 +163,7 @@
           <h2 class="pane-head__title">Что произошло?</h2>
           <p class="pane-head__sub">Выберите одну категорию</p>
         </div>
+        <!-- FIX: onclick="Wizard.pickCat(this)" — метод переименован в JS -->
         <div class="cats" role="radiogroup" aria-label="Категория нарушения">
           <button class="cat" data-val="money"    onclick="Wizard.pickCat(this)" type="button" aria-pressed="false">
             <span class="cat__ico" aria-hidden="true">💰</span>
@@ -186,6 +211,7 @@
           <label class="field__lbl" for="f-desc">
             Опишите ситуацию <span class="field__req" aria-label="обязательное">*</span>
           </label>
+          <!-- FIX: oninput="Wizard.checkDesc()" — правильное имя метода -->
           <textarea class="field__ta" id="f-desc" rows="5"
             placeholder="Что произошло? Кто был причастен? Любые подробности помогут..."
             oninput="Wizard.checkDesc()"></textarea>
@@ -222,9 +248,9 @@
         </dl>
 
         <label class="check-row">
+          <!-- FIX: onchange="Wizard.checkConfirm()" — правильное имя метода -->
           <input class="check-row__inp" type="checkbox" id="chk-confirm"
             onchange="Wizard.checkConfirm()">
-          <span class="check-row__box" aria-hidden="true"></span>
           <span class="check-row__lbl">
             Подтверждаю: это добросовестное обращение, основанное на реальных событиях
           </span>
@@ -238,6 +264,7 @@
 
     <!-- Sticky footer -->
     <footer class="wiz-foot">
+      <!-- FIX: onclick="Wizard.next()" — правильное имя метода -->
       <div id="wf-1">
         <button class="btn btn--primary" id="btn-next-1"
           onclick="Wizard.next()" type="button" disabled>Далее →</button>
@@ -270,7 +297,7 @@
 
 
   <!-- ================================================
-       SCREEN 3: CONFIRM — Code + Next steps
+       SCREEN 3: CONFIRM
   ================================================ -->
   <div id="s-confirm" class="screen">
     <main class="page-body page-body--center">
@@ -291,13 +318,11 @@
 
       <div class="code-box">
         <p class="code-box__label">КОД ДОСТУПА</p>
-        <!-- Значение устанавливается через JS: el.textContent = code -->
         <p class="code-box__code" id="el-code">&nbsp;</p>
         <hr class="code-box__rule">
         <button class="btn btn--outline" id="btn-copy" type="button" onclick="App.copyCode()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="8" y="8" width="13" height="13" rx="2"
-              stroke="currentColor" stroke-width="1.75"/>
+            <rect x="8" y="8" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.75"/>
             <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
               stroke="currentColor" stroke-width="1.75"/>
           </svg>
@@ -354,7 +379,7 @@
 
 
   <!-- ================================================
-       SCREEN 4: STATUS — Track + Dialogue
+       SCREEN 4: STATUS
   ================================================ -->
   <div id="s-status" class="screen">
 
@@ -436,7 +461,6 @@
   </div>
 
 </div><!-- /.app -->
-
 <script src="script.js"></script>
 </body>
 </html>

@@ -1,140 +1,98 @@
 /**
- * ГОЛОС — script.js
- * Anonymous compliance reporting · Production MVP
- * -----------------------------------------------
- * Architecture:
- *   CONST      → app-wide constants
- *   Store      → localStorage facade
- *   Demo       → initial mock data
- *   Codegen    → unique code generation
- *   Nav        → screen routing
- *   App        → global helpers (stats, copy)
- *   Wizard     → 3-step form controller
- *   Status     → status screen controller
- *   Boot       → initialisation
+ * ГОЛОС — script.js  (fixed)
+ * ─────────────────────────────────────────────
+ * Все имена методов совпадают с onclick-атрибутами в HTML.
+ *
+ * Модули:
+ *   CONST    — константы
+ *   Store    — localStorage façade
+ *   Demo     — начальные тестовые данные
+ *   Codegen  — генерация уникального кода
+ *   Nav      — переключение экранов
+ *   App      — статистика, копирование, панель анонимности
+ *   Wizard   — логика 3-шаговой формы
+ *   Status   — статус обращения + диалог
+ *   Boot     — инициализация
  */
 
 'use strict';
 
-/* ============================================================
+/* ─────────────────────────────────────────────
    CONSTANTS
-============================================================ */
+───────────────────────────────────────────── */
 
-const STORAGE_KEY = 'golos_v1';
+const STORAGE_KEY   = 'golos_v1';
+const MIN_DESC_LEN  = 20;
+const BASE_ACTIVE   = 8;
+const BASE_CLOSED   = 3;
 
-/** Human-readable category labels */
-const CATEGORY_LABEL = Object.freeze({
+const CAT_LABEL = Object.freeze({
   money:    'Деньги / Взятка',
   pressure: 'Давление / Этика',
   conflict: 'Конфликт интересов',
   other:    'Другое нарушение',
 });
 
-/** Status → badge config */
-const BADGE_CONFIG = Object.freeze({
+const BADGE_CFG = Object.freeze({
   active: { cls: 'badge--on',  label: 'В работе'        },
   review: { cls: 'badge--rev', label: 'На рассмотрении' },
   closed: { cls: 'badge--off', label: 'Завершено'       },
 });
 
-/** Timeline dot modifier per event type */
-const DOT_CLASS = Object.freeze({
-  created:  'tl-dot--on',
-  assigned: '',
-  question: '',
-  done:     'tl-dot--done',
-  closed:   'tl-dot--done',
-  reply:    '',
-});
+const MONTHS = ['янв','фев','мар','апр','мая','июн',
+                'июл','авг','сен','окт','ноя','дек'];
 
-/** Russian month names (short) */
-const MONTHS_RU = ['янв','фев','мар','апр','мая','июн',
-                   'июл','авг','сен','окт','ноя','дек'];
+/* ─────────────────────────────────────────────
+   DOM HELPERS
+───────────────────────────────────────────── */
 
-/** Minimum description length before wizard advances */
-const MIN_DESC_LENGTH = 20;
+const el  = id  => document.getElementById(id);
+const qsa = sel => [...document.querySelectorAll(sel)];
 
-/** Base stats displayed on the home screen (offset by real data) */
-const BASE_ACTIVE = 8;
-const BASE_CLOSED = 3;
+const show = id => el(id).classList.remove('hidden');
+const hide = id => el(id).classList.add('hidden');
+const setV = (id, on) => el(id).classList.toggle('hidden', !on);
 
-/* ============================================================
-   UTILITIES
-============================================================ */
-
-/** @param {string} id @returns {HTMLElement} */
-const el = id => document.getElementById(id);
-
-/** @param {string} selector @param {Element} [root] */
-const qs = (selector, root = document) => root.querySelector(selector);
-
-/** @param {string} selector @param {Element} [root] */
-const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
-
-/**
- * Show/hide helpers — avoid repetitive classList calls.
- * All visibility is managed via the .hidden utility class in CSS.
- */
-const show = id  => el(id).classList.remove('hidden');
-const hide = id  => el(id).classList.add('hidden');
-const setVisible = (id, visible) => el(id).classList.toggle('hidden', !visible);
-
-/** Format a Date as "DD mon HH:MM" */
-function formatTime(date = new Date()) {
-  const d  = String(date.getDate());
-  const mo = MONTHS_RU[date.getMonth()];
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  return `${d} ${mo} ${hh}:${mm}`;
+function nowStr() {
+  const d  = new Date();
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${hh}:${mm}`;
 }
 
-/** Clamp and return string, appending ellipsis if truncated */
-function truncate(str, max = 80) {
-  if (!str) return '';
-  return str.length > max ? str.slice(0, max) + '…' : str;
+function clip(str, max = 80) {
+  return str && str.length > max ? str.slice(0, max) + '…' : (str || '');
 }
 
-/* ============================================================
-   STORE — localStorage facade
-   All reads are safe; write failures (private mode) are silent.
-============================================================ */
+/* ─────────────────────────────────────────────
+   STORE — localStorage façade
+   Все операции обёрнуты в try/catch (приватный режим).
+───────────────────────────────────────────── */
 
 const Store = (() => {
-
-  function read() {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    } catch {
-      return {};
-    }
-  }
-
-  function write(data) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      /* localStorage unavailable (private browsing, quota exceeded) */
-    }
-  }
+  const read = () => {
+    try   { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  };
+  const write = data => {
+    try   { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+    catch { /* private browsing — silent fail */ }
+  };
 
   return Object.freeze({
-    /** Return all stored reports as a plain object keyed by code. */
-    all() { return read(); },
+    all()   { return read(); },
+    isEmpty(){ return Object.keys(read()).length === 0; },
 
-    /** Persist (create or update) a single report. */
     save(report) {
       const all = read();
       all[report.code] = report;
       write(all);
     },
 
-    /** Look up a report by code (case-insensitive, trims whitespace). */
-    find(rawCode) {
-      const code = rawCode.trim().toUpperCase();
-      return read()[code] ?? null;
+    find(raw) {
+      return read()[(raw || '').trim().toUpperCase()] ?? null;
     },
 
-    /** Counts for home-screen stats. */
     stats() {
       const rows = Object.values(read());
       return {
@@ -142,136 +100,97 @@ const Store = (() => {
         closed: rows.filter(r => r.status === 'closed').length,
       };
     },
-
-    /** Returns true if storage has any records (used to skip demo init). */
-    isEmpty() {
-      return Object.keys(read()).length === 0;
-    },
   });
 })();
 
-/* ============================================================
-   DEMO DATA — inserted once on first visit
-============================================================ */
+/* ─────────────────────────────────────────────
+   DEMO DATA — вставляется один раз при первом визите
+───────────────────────────────────────────── */
 
 const Demo = (() => {
-
-  /** @returns {import('./types').Report} */
-  function makeReport(overrides) {
-    return Object.assign({
-      code:       '',
-      cat:        '',
-      catLabel:   '',
-      loc:        '',
-      date:       '',
-      desc:       '',
-      status:     'active',
-      createdAt:  Date.now(),
-      events:     [],
-      officerMsg: null,
-      reply:      null,
-    }, overrides);
-  }
+  const make = o => Object.assign({
+    code:'', cat:'', catLabel:'', loc:'', date:'', desc:'',
+    status:'active', createdAt: Date.now(),
+    events:[], officerMsg:null, reply:null,
+  }, o);
 
   return Object.freeze({
     init() {
       if (!Store.isEmpty()) return;
 
-      Store.save(makeReport({
-        code:       'DEMO-0001',
-        cat:        'money',
-        catLabel:   CATEGORY_LABEL.money,
-        loc:        'Корпус А, кафедра экономики',
-        date:       '12 мая 2026',
-        desc:       'Преподаватель требует дополнительную оплату за пересдачу экзамена.',
-        status:     'review',
-        createdAt:  Date.now() - 86_400_000,
-        events: [
-          { time: '14 мая 19:32', text: 'Обращение принято',  type: 'created'  },
-          { time: '15 мая 08:14', text: 'Назначен омбудсмен', type: 'assigned' },
-          { time: '15 мая 09:45', text: 'Получен вопрос',     type: 'question' },
+      Store.save(make({
+        code:'DEMO-0001', cat:'money', catLabel: CAT_LABEL.money,
+        loc:'Корпус А, кафедра экономики', date:'12 мая 2026',
+        desc:'Преподаватель требует дополнительную оплату за пересдачу.',
+        status:'review', createdAt: Date.now() - 86_400_000,
+        events:[
+          {time:'14 мая 19:32', text:'Обращение принято',  type:'created'  },
+          {time:'15 мая 08:14', text:'Назначен омбудсмен', type:'assigned' },
+          {time:'15 мая 09:45', text:'Получен вопрос',     type:'question' },
         ],
-        officerMsg: 'Уточните: это произошло во время официальной пересдачи или договорённости в частном порядке?',
+        officerMsg:'Уточните: это произошло во время официальной пересдачи или в частном порядке?',
       }));
 
-      Store.save(makeReport({
-        code:      'DEMO-0002',
-        cat:       'conflict',
-        catLabel:  CATEGORY_LABEL.conflict,
-        loc:       'Деканат',
-        date:      '5 мая 2026',
-        desc:      'Декан направляет студентов на практику исключительно в компанию своего родственника.',
-        status:    'closed',
-        createdAt: Date.now() - 172_800_000,
-        events: [
-          { time: '5 мая 14:00', text: 'Обращение принято',           type: 'created'  },
-          { time: '6 мая 09:00', text: 'Назначен омбудсмен',          type: 'assigned' },
-          { time: '8 мая 16:30', text: 'Расследование завершено',     type: 'done'     },
-          { time: '9 мая 11:00', text: 'Меры приняты. Дело закрыто.', type: 'closed'   },
+      Store.save(make({
+        code:'DEMO-0002', cat:'conflict', catLabel: CAT_LABEL.conflict,
+        loc:'Деканат', date:'5 мая 2026',
+        desc:'Декан направляет студентов в компанию родственника.',
+        status:'closed', createdAt: Date.now() - 172_800_000,
+        events:[
+          {time:'5 мая 14:00', text:'Обращение принято',           type:'created'  },
+          {time:'6 мая 09:00', text:'Назначен омбудсмен',          type:'assigned' },
+          {time:'8 мая 16:30', text:'Расследование завершено',     type:'done'     },
+          {time:'9 мая 11:00', text:'Меры приняты. Дело закрыто.', type:'closed'   },
         ],
       }));
 
-      Store.save(makeReport({
-        code:      'DEMO-0003',
-        cat:       'pressure',
-        catLabel:  CATEGORY_LABEL.pressure,
-        loc:       'Учебный корпус Б',
-        date:      '16 мая 2026',
-        desc:      'Научный руководитель принуждает включать его в соавторы выпускной работы.',
-        status:    'active',
-        createdAt: Date.now() - 3_600_000,
-        events: [
-          { time: '16 мая 18:00', text: 'Обращение принято', type: 'created' },
-        ],
+      Store.save(make({
+        code:'DEMO-0003', cat:'pressure', catLabel: CAT_LABEL.pressure,
+        loc:'Учебный корпус Б', date:'16 мая 2026',
+        desc:'Научный руководитель принуждает включать его в соавторы работы.',
+        status:'active', createdAt: Date.now() - 3_600_000,
+        events:[{time:'16 мая 18:00', text:'Обращение принято', type:'created'}],
       }));
     },
   });
 })();
 
-/* ============================================================
-   CODEGEN — cryptographically random unique code
-   Format: XXXX-NNNN  (letters + numbers, no ambiguous chars)
-============================================================ */
+/* ─────────────────────────────────────────────
+   CODEGEN — криптографически случайный код XXXX-NNNN
+   Исключены визуально похожие символы: O/0  I/1/l
+───────────────────────────────────────────── */
 
 const Codegen = (() => {
-
-  /* Remove visually ambiguous characters: O/0, I/1/l */
-  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; /* 24 chars */
-  const NUMS  = '23456789';                 /* 8 chars  */
+  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ';  /* 24 буквы */
+  const NUMS  = '23456789';                   /* 8 цифр   */
 
   return Object.freeze({
     generate() {
       const buf = new Uint8Array(8);
       (window.crypto || window.msCrypto).getRandomValues(buf);
-
-      const part1 = Array.from(buf.slice(0, 4), n => ALPHA[n % ALPHA.length]).join('');
-      const part2 = Array.from(buf.slice(4),    n => NUMS [n % NUMS.length ]).join('');
-
-      return `${part1}-${part2}`;
+      const p1 = Array.from(buf.slice(0,4), n => ALPHA[n % ALPHA.length]).join('');
+      const p2 = Array.from(buf.slice(4),   n => NUMS [n % NUMS.length ]).join('');
+      return `${p1}-${p2}`;
     },
   });
 })();
 
-/* ============================================================
-   NAV — screen routing
-   Single source of truth for which screen is visible.
-============================================================ */
+/* ─────────────────────────────────────────────
+   NAV — единственный маршрутизатор экранов
+───────────────────────────────────────────── */
 
 const Nav = (() => {
+  let _sessionCode = null;   /* код последнего отправленного обращения */
 
-  /** The code submitted in this session (set by Wizard, read by Status). */
-  let _sessionCode = null;
-
-  function activate(screenId) {
+  function activate(id) {
     qsa('.screen').forEach(s => s.classList.remove('is-active'));
-    el(screenId).classList.add('is-active');
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    el(id).classList.add('is-active');
+    window.scrollTo({ top:0, behavior:'instant' });
   }
 
   return Object.freeze({
-    /** Called by Wizard after successful submit to share the code. */
-    setSessionCode(code) { _sessionCode = code; },
-    getSessionCode()     { return _sessionCode;  },
+    setSession(code) { _sessionCode = code; },
+    getSession()     { return _sessionCode;  },
 
     toHome()   { activate('s-home');    },
     toWizard() { activate('s-wizard');  },
@@ -279,12 +198,10 @@ const Nav = (() => {
 
     toStatus() {
       activate('s-status');
-
       if (_sessionCode) {
-        /* Return user came from confirm screen — show result immediately. */
+        /* Пришли с экрана подтверждения — сразу показываем результат */
         Status.render(_sessionCode);
       } else {
-        /* Fresh entry — show search form. */
         show('pnl-search');
         hide('pnl-result');
         el('topbar-code').textContent = '';
@@ -294,99 +211,93 @@ const Nav = (() => {
   });
 })();
 
-/* ============================================================
-   APP — global helpers (stats, clipboard)
-============================================================ */
+/* ─────────────────────────────────────────────
+   APP — глобальные хелперы
+───────────────────────────────────────────── */
 
 const App = (() => {
+  let _anonOpen = false;   /* состояние панели анонимности */
 
   return Object.freeze({
 
-    /** Refresh live stats on the home screen. */
+    /* Обновить счётчики на главном экране */
     refreshStats() {
       const s = Store.stats();
       el('stat-active').textContent = BASE_ACTIVE + s.active;
       el('stat-closed').textContent = BASE_CLOSED + s.closed;
     },
 
-    /**
-     * Copy the code displayed in #el-code.
-     * Three-tier fallback:
-     *   1. navigator.clipboard (modern secure contexts)
-     *   2. document.execCommand (legacy, HTTP)
-     *   3. Silent fail (clipboard inaccessible — rare)
-     */
+    /* Переключить панель объяснения анонимности */
+    toggleAnonymity() {
+      _anonOpen = !_anonOpen;
+      setV('anon-panel', _anonOpen);
+    },
+
+    /* ── COPY ──────────────────────────────────
+       Три уровня fallback:
+         1. navigator.clipboard  (HTTPS, современные браузеры)
+         2. execCommand('copy')  (HTTP, старые браузеры)
+         3. Тихий провал         (clipboard недоступен)
+    ─────────────────────────────────────────── */
     copyCode() {
-      /* Always read from the live DOM — never from a cached variable. */
+      /* Читаем код НАПРЯМУЮ из DOM — never from a stale variable */
       const codeEl = el('el-code');
-      const code   = (codeEl.textContent || '').trim();
+      if (!codeEl) return;
 
-      /* Guard: don't attempt copy if the element is empty or placeholder. */
-      if (!code || code === '\u00a0' || code.includes('?')) return;
+      const code = codeEl.textContent.trim();
 
-      const onDone = () => App._flashCopyButton();
-      const onFail = () => App._legacyCopy(code, onDone);
+      /* Защита: не копируем если элемент пустой или содержит заглушку */
+      if (!code || code === '\u00a0' || code.startsWith('?')) return;
+
+      const flash = () => App._flashBtn();
+      const fallback = () => App._execCopy(code, flash);
 
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(code).then(onDone).catch(onFail);
+        navigator.clipboard.writeText(code).then(flash).catch(fallback);
       } else {
-        App._legacyCopy(code, onDone);
+        fallback();
       }
     },
 
-    _flashCopyButton() {
-      const btn = el('btn-copy');
-      const originalHTML = btn.innerHTML;
-
+    _flashBtn() {
+      const btn  = el('btn-copy');
+      if (!btn) return;
+      const orig = btn.innerHTML;
       btn.textContent = '✓ Скопировано';
       btn.classList.add('btn--ok');
-
       setTimeout(() => {
-        btn.innerHTML = originalHTML;
+        btn.innerHTML = orig;
         btn.classList.remove('btn--ok');
       }, 2200);
     },
 
-    /** execCommand fallback for HTTP / older browsers */
-    _legacyCopy(text, onSuccess) {
+    _execCopy(text, onDone) {
       const ta = document.createElement('textarea');
-      Object.assign(ta.style, {
-        position: 'fixed',
-        left: '-9999px',
-        top:  '-9999px',
-        opacity: '0',
-      });
+      Object.assign(ta.style, { position:'fixed', left:'-9999px', top:'-9999px', opacity:'0' });
       ta.value    = text;
       ta.readOnly = true;
       document.body.appendChild(ta);
       ta.select();
       ta.setSelectionRange(0, 99999);
-      try {
-        const ok = document.execCommand('copy');
-        if (ok) onSuccess();
-      } catch { /* clipboard unavailable */ }
+      try { if (document.execCommand('copy')) onDone(); } catch {}
       document.body.removeChild(ta);
     },
   });
 })();
 
-/* ============================================================
-   WIZARD — 3-step form controller
-============================================================ */
+/* ─────────────────────────────────────────────
+   WIZARD — контроллер 3-шаговой формы
+   Все имена методов совпадают с onclick в HTML.
+───────────────────────────────────────────── */
 
 const Wizard = (() => {
-
-  /* Mutable form state — reset on every startWizard() call. */
-  const state = {
-    step:     1,
-    category: null,  /* matches CATEGORY_LABEL key */
-    location: '',
-    date:     '',
-    description: '',
-    confirmed: false,
+  /* Мутируемое состояние — сбрасывается при start() */
+  const W = {
+    step: 1, category: null,
+    location: '', date: '', description: '', confirmed: false,
   };
 
-  /* ── Progress bar ── */
+  /* ── Прогресс-бар ── */
   function updateProgress(step) {
     for (let i = 1; i <= 3; i++) {
       const dot = el(`step-dot-${i}`);
@@ -399,351 +310,274 @@ const Wizard = (() => {
     }
   }
 
-  /* ── Pane / footer visibility ── */
-  function setStep(n) {
-    state.step = n;
+  /* ── Переключение панелей/футера ── */
+  function goStep(n) {
+    W.step = n;
 
-    /* Panes */
+    /* Панели */
     for (let i = 1; i <= 3; i++) {
       el(`pane-${i}`).classList.toggle('is-active', i === n);
     }
 
-    /* Footer button rows */
-    ['wf-1', 'wf-2', 'wf-3'].forEach((id, idx) => {
+    /* Строки футера */
+    ['wf-1','wf-2','wf-3'].forEach((id, idx) => {
       el(id).classList.toggle('hidden', idx + 1 !== n);
     });
 
-    /* Back button */
+    /* Кнопка «Назад» */
     el('wizard-back').style.visibility = n === 1 ? 'hidden' : 'visible';
 
     updateProgress(n);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
-  /* ── Review panel population ── */
+  /* ── Заполнить экран проверки ── */
   function fillReview() {
-    const set = (id, value) => {
+    const set = (id, val) => {
       const node = el(id);
-      if (value) {
-        node.textContent = truncate(value);
+      if (val) {
+        node.textContent = clip(val);
         node.classList.remove('is-empty');
       } else {
         node.textContent = 'не указано';
         node.classList.add('is-empty');
       }
     };
-
-    set('rv-cat',  CATEGORY_LABEL[state.category]);
-    set('rv-loc',  state.location);
-    set('rv-date', state.date);
-    set('rv-desc', state.description);
+    set('rv-cat',  CAT_LABEL[W.category]);
+    set('rv-loc',  W.location);
+    set('rv-date', W.date);
+    set('rv-desc', W.description);
   }
 
-  /* ── Validation helpers ── */
-  function isCategoryValid() { return state.category !== null; }
-  function isDescValid()     { return state.description.trim().length >= MIN_DESC_LENGTH; }
-  function isConfirmed()     { return state.confirmed; }
-
-  /* Public API */
   return Object.freeze({
 
-    /** Reset all state and launch the wizard screen. */
+    /* ── Запустить wizard ── */
     start() {
-      Object.assign(state, {
-        step: 1, category: null,
-        location: '', date: '', description: '', confirmed: false,
+      Object.assign(W, {
+        step:1, category:null,
+        location:'', date:'', description:'', confirmed:false,
       });
 
-      /* Clear category selection */
-      qsa('.cat').forEach(btn => {
-        btn.classList.remove('is-selected');
-        btn.setAttribute('aria-pressed', 'false');
+      qsa('.cat').forEach(b => {
+        b.classList.remove('is-selected');
+        b.setAttribute('aria-pressed','false');
       });
 
-      /* Clear form inputs */
-      ['f-loc', 'f-date', 'f-desc'].forEach(id => { el(id).value = ''; });
-
-      /* Reset checkbox */
+      ['f-loc','f-date','f-desc'].forEach(id => { el(id).value = ''; });
       el('chk-confirm').checked = false;
-
-      /* Disable all advance buttons */
-      ['btn-next-1', 'btn-next-2', 'btn-submit'].forEach(id => {
+      ['btn-next-1','btn-next-2','btn-submit'].forEach(id => {
         el(id).disabled = true;
       });
 
-      setStep(1);
+      goStep(1);
       Nav.toWizard();
     },
 
-    /** Called by category button onclick. */
-    pickCategory(btn) {
+    /* ── Выбор категории ──
+       HTML вызывает: onclick="Wizard.pickCat(this)"          */
+    pickCat(btn) {
       qsa('.cat').forEach(b => {
         b.classList.remove('is-selected');
-        b.setAttribute('aria-pressed', 'false');
+        b.setAttribute('aria-pressed','false');
       });
-
       btn.classList.add('is-selected');
-      btn.setAttribute('aria-pressed', 'true');
-
-      state.category = btn.dataset.val;
-      el('btn-next-1').disabled = !isCategoryValid();
+      btn.setAttribute('aria-pressed','true');
+      W.category = btn.dataset.val;
+      el('btn-next-1').disabled = false;
     },
 
-    /** Called by textarea oninput. */
-    onDescriptionInput() {
-      state.description = el('f-desc').value;
-      el('btn-next-2').disabled = !isDescValid();
+    /* ── Валидация описания ──
+       HTML вызывает: oninput="Wizard.checkDesc()"            */
+    checkDesc() {
+      W.description = el('f-desc').value;
+      el('btn-next-2').disabled = W.description.trim().length < MIN_DESC_LEN;
     },
 
-    /** Called by confirmation checkbox onchange. */
-    onConfirmChange() {
-      state.confirmed = el('chk-confirm').checked;
-      el('btn-submit').disabled = !isConfirmed();
+    /* ── Галочка подтверждения ──
+       HTML вызывает: onchange="Wizard.checkConfirm()"        */
+    checkConfirm() {
+      W.confirmed = el('chk-confirm').checked;
+      el('btn-submit').disabled = !W.confirmed;
     },
 
-    /** Advance to next step (or stay if validation fails). */
-    advance() {
-      if (state.step === 1 && isCategoryValid()) {
-        setStep(2);
-      } else if (state.step === 2 && isDescValid()) {
-        state.location    = el('f-loc').value.trim();
-        state.date        = el('f-date').value.trim();
-        state.description = el('f-desc').value.trim();
+    /* ── Следующий шаг ──
+       HTML вызывает: onclick="Wizard.next()"                 */
+    next() {
+      if (W.step === 1 && W.category) {
+        goStep(2);
+      } else if (W.step === 2 && W.description.trim().length >= MIN_DESC_LEN) {
+        W.location = el('f-loc').value.trim();
+        W.date     = el('f-date').value.trim();
+        W.description = el('f-desc').value.trim();
         fillReview();
-        setStep(3);
+        goStep(3);
       }
     },
 
-    /** Go back one step, or return to home from step 1. */
+    /* ── Назад ── */
     back() {
-      if (state.step > 1) setStep(state.step - 1);
-      else                Nav.toHome();
+      if (W.step > 1) goStep(W.step - 1);
+      else            Nav.toHome();
     },
 
-    /**
-     * Build the report object, persist it, display the code,
-     * then navigate to the confirmation screen.
-     */
+    /* ── Отправить обращение ── */
     submit() {
-      if (!isConfirmed()) return;
+      if (!W.confirmed) return;
 
       const code = Codegen.generate();
 
-      const report = {
+      Store.save({
         code,
-        cat:      state.category,
-        catLabel: CATEGORY_LABEL[state.category],
-        loc:      state.location,
-        date:     state.date,
-        desc:     state.description,
+        cat:      W.category,
+        catLabel: CAT_LABEL[W.category],
+        loc:      W.location,
+        date:     W.date,
+        desc:     W.description,
         status:   'active',
         createdAt: Date.now(),
-        events: [
-          { time: formatTime(), text: 'Обращение принято', type: 'created' },
-        ],
+        events: [{ time: nowStr(), text: 'Обращение принято', type: 'created' }],
         officerMsg: null,
         reply:      null,
-      };
+      });
 
-      Store.save(report);
       App.refreshStats();
 
-      /* Set the code in the DOM *before* navigating so copy works immediately. */
+      /* ВАЖНО: устанавливаем код в DOM ДО навигации */
       el('el-code').textContent = code;
-
-      Nav.setSessionCode(code);
+      Nav.setSession(code);
       Nav.toConfirm();
     },
   });
 })();
 
-/* ============================================================
-   STATUS — status tracking + anonymous dialogue
-============================================================ */
+/* ─────────────────────────────────────────────
+   STATUS — отслеживание + анонимный диалог
+───────────────────────────────────────────── */
 
 const Status = (() => {
+  let _code = '';   /* код открытого на экране обращения */
 
-  /* Code currently visible on the status screen. */
-  let _visibleCode = '';
-
-  /* ── Timeline HTML builder ── */
-  function buildTimeline(events, reportStatus) {
+  function buildTimeline(events, status) {
     return events.map((ev, i) => {
-      const isLast = i === events.length - 1;
-
-      /* Closed reports use green dots for all events. */
-      const dotMod = reportStatus === 'closed'
-        ? 'tl-dot--done'
-        : (DOT_CLASS[ev.type] || '');
-
-      return `
-        <li class="tl-row">
-          <div class="tl-row__aside">
-            <div class="tl-dot ${dotMod}"></div>
-            ${isLast ? '' : '<div class="tl-line"></div>'}
-          </div>
-          <div class="tl-row__body">
-            <p class="tl-row__when">${ev.time}</p>
-            <p class="tl-row__what">${ev.text}</p>
-          </div>
-        </li>`;
+      const last   = i === events.length - 1;
+      const dotMod = status === 'closed' ? 'tl-dot--done'
+                   : i === 0             ? 'tl-dot--on'   : '';
+      return `<li class="tl-row">
+        <div class="tl-row__aside">
+          <div class="tl-dot ${dotMod}"></div>
+          ${last ? '' : '<div class="tl-line"></div>'}
+        </div>
+        <div class="tl-row__body">
+          <p class="tl-row__when">${ev.time}</p>
+          <p class="tl-row__what">${ev.text}</p>
+        </div>
+      </li>`;
     }).join('');
   }
 
-  /* ── Badge ── */
-  function applyBadge(report) {
-    const cfg   = BADGE_CONFIG[report.status] ?? BADGE_CONFIG.active;
-    const badge = el('res-badge');
-    badge.className = `badge ${cfg.cls}`;
-    el('res-badge-text').textContent = cfg.label;
-  }
-
-  /* Public API */
   return Object.freeze({
 
-    /** Search by code entered in the input field. */
+    /* ── Поиск по коду ──
+       HTML вызывает: onclick="Status.find()"                */
     find() {
-      const raw  = el('inp-code').value;
-      const code = raw.trim().toUpperCase();
-
+      const code = el('inp-code').value.trim().toUpperCase();
       if (!code) return;
 
-      const report = Store.find(code);
-      if (!report) {
+      const r = Store.find(code);
+      if (!r) {
         el('search-err').classList.add('is-show');
         return;
       }
-
       Status.render(code);
     },
 
-    clearError() {
+    /* ── Сбросить ошибку ──
+       HTML вызывает: oninput="Status.clearErr()"           */
+    clearErr() {
       el('search-err').classList.remove('is-show');
     },
 
-    /**
-     * Populate and display the result panel for a given code.
-     * Called both from find() and from Nav.toStatus() when returning
-     * from the confirm screen.
-     */
+    /* ── Отрисовать результат ── */
     render(code) {
-      const report = Store.find(code);
-      if (!report) return;
+      const r = Store.find(code);
+      if (!r) return;
 
-      _visibleCode = code;
+      _code = code;
 
-      /* Switch panels */
       hide('pnl-search');
       show('pnl-result');
 
-      /* Header */
       el('topbar-code').textContent = code;
       el('res-title').textContent   = `Обращение ${code}`;
 
       /* Badge */
-      applyBadge(report);
+      const cfg = BADGE_CFG[r.status] ?? BADGE_CFG.active;
+      el('res-badge').className = `badge ${cfg.cls}`;
+      el('res-badge-text').textContent = cfg.label;
 
       /* Timeline */
-      el('tl-history').innerHTML = buildTimeline(report.events, report.status);
+      el('tl-history').innerHTML = buildTimeline(r.events, r.status);
 
       /* Officer message */
-      const hasMessage = Boolean(report.officerMsg);
-      setVisible('pnl-officer', hasMessage);
-      if (hasMessage) {
-        el('officer-text').textContent = report.officerMsg;
-      }
+      const hasMsg = Boolean(r.officerMsg);
+      setV('pnl-officer', hasMsg);
+      if (hasMsg) el('officer-text').textContent = r.officerMsg;
 
-      /* Reply / sent states */
-      const canReply   = hasMessage && !report.reply;
-      const replySent  = hasMessage && Boolean(report.reply);
-      setVisible('pnl-reply', canReply);
-      setVisible('pnl-sent',  replySent);
+      /* Reply panels */
+      setV('pnl-reply', hasMsg && !r.reply);
+      setV('pnl-sent',  hasMsg && Boolean(r.reply));
 
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      window.scrollTo({ top:0, behavior:'instant' });
     },
 
-    /** Update character counter on reply textarea. */
+    /* ── Счётчик символов ──
+       HTML вызывает: oninput="Status.countChars()"         */
     countChars() {
       const ta = el('inp-reply');
       if (ta.value.length > 500) ta.value = ta.value.slice(0, 500);
       el('char-count').textContent = ta.value.length;
     },
 
-    /**
-     * Persist the user's reply and update the UI.
-     * The reply is appended to the event log so future renders show it.
-     */
+    /* ── Отправить ответ ── */
     sendReply() {
       const text = el('inp-reply').value.trim();
-      if (!text || !_visibleCode) return;
+      if (!text || !_code) return;
 
-      const report = Store.find(_visibleCode);
-      if (!report) return;
+      const r = Store.find(_code);
+      if (!r) return;
 
-      report.reply = text;
-      report.events.push({
-        time: formatTime(),
-        text: 'Ваш ответ отправлен',
-        type: 'reply',
-      });
+      r.reply = text;
+      r.events.push({ time: nowStr(), text: 'Ваш ответ отправлен', type:'reply' });
+      Store.save(r);
 
-      Store.save(report);
-
-      /* UI transition: hide reply form, show confirmation notice. */
       hide('pnl-reply');
       show('pnl-sent');
     },
   });
 })();
 
-/* ============================================================
-   GLOBAL EVENT WIRING
-   All onclick attributes in HTML call into the modules above.
-   This section wires anything that can't be done inline.
-============================================================ */
+/* ─────────────────────────────────────────────
+   GLOBAL EXPORTS
+   Все объекты экспортируются на window,
+   чтобы onclick-атрибуты в HTML работали.
+───────────────────────────────────────────── */
 
-(function wireEvents() {
-
-  /* Enter key in code search field triggers lookup */
-  const codeInput = el('inp-code');
-  if (codeInput) {
-    codeInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') Status.find();
-    });
-  }
-
-  /* Prevent accidental form submission on wizard fields */
-  qsa('input.field__inp, textarea.field__ta').forEach(inp => {
-    inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && inp.tagName !== 'TEXTAREA') e.preventDefault();
-    });
-  });
-
-})();
-
-/* ============================================================
-   BOOT — runs once on DOMContentLoaded
-============================================================ */
-
-const Boot = (() => {
-  return Object.freeze({
-    init() {
-      Demo.init();          /* populate localStorage on first visit */
-      App.refreshStats();   /* show live stats on home screen       */
-    },
-  });
-})();
-
-/* Wire up global helpers used from HTML onclick attributes */
-/* These are intentionally on window to keep HTML clean with short names */
 window.Nav    = Nav;
 window.App    = App;
 window.Wizard = Wizard;
 window.Status = Status;
 
-/* Run */
+/* ─────────────────────────────────────────────
+   BOOT
+───────────────────────────────────────────── */
+
+function boot() {
+  Demo.init();
+  App.refreshStats();
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', Boot.init);
+  document.addEventListener('DOMContentLoaded', boot);
 } else {
-  Boot.init();
+  boot();
 }
