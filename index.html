@@ -242,6 +242,35 @@
             oninput="Wizard.checkDesc()"></textarea>
           <span class="field__hint" id="desc-hint">Минимум 20 символов</span>
         </div>
+
+        <!-- FILE UPLOAD -->
+        <div class="field">
+          <label class="field__lbl" for="f-file">
+            Прикрепить доказательство
+            <span class="field__opt">необязательно</span>
+          </label>
+          <label class="file-drop" id="file-drop-zone">
+            <input type="file" id="f-file" class="file-drop__inp"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+              onchange="Wizard.onFileChange(this)">
+            <svg class="file-drop__ico" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"
+                stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="file-drop__text" id="file-drop-text">
+              Нажмите чтобы выбрать файл
+            </span>
+            <span class="file-drop__sub">JPG, PNG, PDF, DOC · до 10 МБ</span>
+          </label>
+          <div class="file-meta-note">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6L12 2Z"
+                stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+            </svg>
+            Метаданные файла (EXIF, геолокация, авторство) удаляются автоматически
+          </div>
+        </div>
+
       </main>
     </div>
 
@@ -268,6 +297,10 @@
           <div class="review-row">
             <dt>Описание</dt>
             <dd id="rv-desc">—</dd>
+          </div>
+          <div class="review-row">
+            <dt>Файл</dt>
+            <dd id="rv-file" class="is-empty">не прикреплён</dd>
           </div>
         </dl>
 

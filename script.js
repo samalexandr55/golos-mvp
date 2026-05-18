@@ -296,7 +296,9 @@ const App = (() => {
 const Wizard = (() => {
   const W = {
     step: 1, category: null,
-    location: '', date: '', description: '', confirmed: false,
+    location: '', date: '', description: '',
+    fileName: null,   /* имя выбранного файла (только для отображения) */
+    confirmed: false,
   };
 
   function updateProgress(step) {
@@ -339,6 +341,7 @@ const Wizard = (() => {
     set('rv-loc',  W.location);
     set('rv-date', W.date);
     set('rv-desc', W.description);
+    set('rv-file', W.fileName);
   }
 
   return Object.freeze({
@@ -353,6 +356,12 @@ const Wizard = (() => {
         b.setAttribute('aria-pressed', 'false');
       });
       ['f-loc', 'f-date', 'f-desc'].forEach(id => { el(id).value = ''; });
+      const fileInp = el('f-file');
+      if (fileInp) fileInp.value = '';
+      const dropText = el('file-drop-text');
+      if (dropText) dropText.textContent = 'Нажмите чтобы выбрать файл';
+      const dropZone = el('file-drop-zone');
+      if (dropZone) dropZone.classList.remove('file-drop--selected');
       el('chk-confirm').checked = false;
       ['btn-next-1', 'btn-next-2', 'btn-submit'].forEach(id => {
         el(id).disabled = true;
@@ -386,6 +395,22 @@ const Wizard = (() => {
       el('btn-submit').disabled = !W.confirmed;
     },
 
+    /* HTML: onchange="Wizard.onFileChange(this)" */
+    onFileChange(input) {
+      const file     = input.files && input.files[0];
+      const dropText = el('file-drop-text');
+      const dropZone = el('file-drop-zone');
+      if (file) {
+        W.fileName = file.name;
+        dropText.textContent = file.name;
+        dropZone.classList.add('file-drop--selected');
+      } else {
+        W.fileName = null;
+        dropText.textContent = 'Нажмите чтобы выбрать файл';
+        dropZone.classList.remove('file-drop--selected');
+      }
+    },
+
     /* HTML: onclick="Wizard.next()" */
     next() {
       if (W.step === 1 && W.category) {
@@ -394,6 +419,7 @@ const Wizard = (() => {
         W.location    = el('f-loc').value.trim();
         W.date        = el('f-date').value.trim();
         W.description = el('f-desc').value.trim();
+        /* W.fileName уже установлен через onFileChange */
         fillReview();
         goStep(3);
       }
