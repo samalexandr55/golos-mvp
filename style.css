@@ -650,3 +650,34 @@ ol, ul { list-style: none; }
   line-height: 1.4;
 }
 .file-meta-note svg { color: var(--c-teal); flex-shrink: 0; }
+
+/* ── WIZARD CLOSE BUTTON (крестик → главная) ── */
+.wizard-toprow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: var(--sp-4);
+}
+
+.wizard-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--c-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.wizard-close:hover {
+  background: var(--c-bg);
+  color: var(--c-navy);
+}
+.wizard-close:active {
+  transform: scale(.92);
+}
